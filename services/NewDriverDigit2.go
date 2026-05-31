@@ -41,7 +41,7 @@ type DriverDigit2 struct {
 // NewDriverDigit2 creates driver
 func NewDriverDigit2(height int, width int, noiseCount int, length int, bgColor *color.RGBA, font string) *DriverDigit2 {
 
-	fontsStorage := &config.FileFontStorage{Dir: "."}
+	fontsStorage := config.DefaultEmbeddedFonts
 
 	if font == "" {
 		font = fonts.BTitrBd
