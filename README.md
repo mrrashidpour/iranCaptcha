@@ -138,7 +138,7 @@ SOFTWARE.
 
 اگر سوالی دارید، نیاز به راهنمایی دارید، یا پیشنهادی برای بهبود پروژه دارید، خوشحال می‌شوم بشنوم.
 
-- 📧 **ایمیل:** [mr.rashidpour@gmail.com](mailto:mr.rashidpour@gmail.com)
+- 📧 **ایمیل:** [rashidpour1995@gmail.com](mailto:rashidpour1995@gmail.com)
 - 🐙 **گیت‌هاب:** [github.com/mrrashidpour](https://github.com/mrrashidpour)
 
 می‌توانید از طریق **Issue** در گیت‌هاب هم سوال خود را مطرح کنید تا دیگران نیز از پاسخ آن بهره‌مند شوند.
