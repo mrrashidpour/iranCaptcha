@@ -43,7 +43,7 @@ func NewDriverDigit(height int, width int, noiseCount int, length int, bgColor *
 	fontsStorage := DefaultEmbeddedFonts
 
 	if font == "" {
-		font = fonts.BTitrBd
+		font = fonts.FaNum
 	}
 
 	if bgColor == nil {
