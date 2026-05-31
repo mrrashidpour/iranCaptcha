@@ -7,10 +7,6 @@ import (
 	"github.com/golang/freetype/truetype"
 )
 
-const (
-	BTitrBd = "BTitrBd.ttf"
-)
-
 type FileFontStorage struct {
 	Dir string
 }
