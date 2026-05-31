@@ -56,12 +56,10 @@ func RandDeepColor() color.RGBA {
 
 	randColor := RandColor()
 
-	increase := float64(30 + rand.Intn(100))
-
-	red := math.Abs(math.Min(float64(randColor.R)-increase, 100))
-
-	green := math.Abs(math.Min(float64(randColor.G)-increase, 100))
-	blue := math.Abs(math.Min(float64(randColor.B)-increase, 100))
+	increase := float64(30 + rand.Intn(255))
+	red := math.Abs(math.Min(float64(randColor.R)-increase, 255))
+	green := math.Abs(math.Min(float64(randColor.G)-increase, 255))
+	blue := math.Abs(math.Min(float64(randColor.B)-increase, 255))
 
 	return color.RGBA{R: uint8(red), G: uint8(green), B: uint8(blue), A: uint8(255)}
 }
@@ -71,6 +69,17 @@ func RandLightColor() color.RGBA {
 	red := rand.Intn(55) + 200
 	green := rand.Intn(55) + 200
 	blue := rand.Intn(55) + 200
+	return color.RGBA{R: uint8(red), G: uint8(green), B: uint8(blue), A: uint8(255)}
+}
+
+// RandDarkColor get random ligth color. 随机生成浅色.
+func RandDarkColor() color.RGBA {
+
+	maxColor := 130
+
+	red := rand.Intn(maxColor)
+	green := rand.Intn(maxColor)
+	blue := rand.Intn(maxColor)
 	return color.RGBA{R: uint8(red), G: uint8(green), B: uint8(blue), A: uint8(255)}
 }
 
