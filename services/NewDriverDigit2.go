@@ -2,12 +2,12 @@ package services
 
 import (
 	"image/color"
-	"iranCaptcha/config"
 	"math/rand"
 	"strings"
 
 	"github.com/golang/freetype/truetype"
 	"github.com/mojocn/base64Captcha"
+	"github.com/mrrashidpour/iranCaptcha/config"
 )
 
 type DriverDigit2 struct {

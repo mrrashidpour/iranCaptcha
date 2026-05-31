@@ -2,10 +2,10 @@ package iranCaptcha
 
 import (
 	"image/color"
-	"iranCaptcha/services"
 	"time"
 
 	"github.com/mojocn/base64Captcha"
+	"github.com/mrrashidpour/iranCaptcha/services"
 )
 
 func NewMemoryStore(collectNum int, expiration time.Duration) base64Captcha.Store {
