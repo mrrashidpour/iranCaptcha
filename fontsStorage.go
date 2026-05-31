@@ -1,4 +1,4 @@
-package config
+package iranCaptcha
 
 import (
 	"embed"

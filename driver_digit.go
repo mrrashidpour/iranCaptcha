@@ -1,4 +1,4 @@
-package services
+package iranCaptcha
 
 import (
 	"image/color"
@@ -10,7 +10,7 @@ import (
 	"github.com/mrrashidpour/iranCaptcha/fonts"
 )
 
-type DriverDigit2 struct {
+type DriverDigit struct {
 	// Height png height in pixel.
 	Height int
 
@@ -37,10 +37,10 @@ type DriverDigit2 struct {
 	fontsArray []*truetype.Font
 }
 
-// NewDriverDigit2 creates driver
-func NewDriverDigit2(height int, width int, noiseCount int, length int, bgColor *color.RGBA, font string) *DriverDigit2 {
+// NewDriverDigit creates driver
+func NewDriverDigit(height int, width int, noiseCount int, length int, bgColor *color.RGBA, font string) *DriverDigit {
 
-	fontsStorage := fonts.DefaultEmbeddedFonts
+	fontsStorage := DefaultEmbeddedFonts
 
 	if font == "" {
 		font = fonts.BTitrBd
@@ -54,7 +54,7 @@ func NewDriverDigit2(height int, width int, noiseCount int, length int, bgColor 
 
 	tfs := []*truetype.Font{tf}
 
-	return &DriverDigit2{
+	return &DriverDigit{
 		Height:       height,
 		Width:        width,
 		NoiseCount:   noiseCount,
@@ -68,7 +68,7 @@ func NewDriverDigit2(height int, width int, noiseCount int, length int, bgColor 
 }
 
 // ConvertFonts loads fonts by names
-func (d *DriverDigit2) ConvertFonts() *DriverDigit2 {
+func (d *DriverDigit) ConvertFonts() *DriverDigit {
 	if d.fontsStorage == nil {
 		d.fontsStorage = base64Captcha.DefaultEmbeddedFonts
 	}
@@ -85,14 +85,14 @@ func (d *DriverDigit2) ConvertFonts() *DriverDigit2 {
 }
 
 // GenerateIdQuestionAnswer creates id,content and answer
-func (d *DriverDigit2) GenerateIdQuestionAnswer() (id, content, answer string) {
+func (d *DriverDigit) GenerateIdQuestionAnswer() (id, content, answer string) {
 	id = RandomId()
 	content = RandText(d.Length, d.Source)
 	return id, content, content
 }
 
 // DrawCaptcha draws captcha item
-func (d *DriverDigit2) DrawCaptcha(content string) (item base64Captcha.Item, err error) {
+func (d *DriverDigit) DrawCaptcha(content string) (item base64Captcha.Item, err error) {
 
 	var bgc color.RGBA
 	if d.BgColor != nil {
