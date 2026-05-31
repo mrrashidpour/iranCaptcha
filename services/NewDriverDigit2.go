@@ -7,7 +7,6 @@ import (
 
 	"github.com/golang/freetype/truetype"
 	"github.com/mojocn/base64Captcha"
-	"github.com/mrrashidpour/iranCaptcha/config"
 	"github.com/mrrashidpour/iranCaptcha/fonts"
 )
 
@@ -41,7 +40,7 @@ type DriverDigit2 struct {
 // NewDriverDigit2 creates driver
 func NewDriverDigit2(height int, width int, noiseCount int, length int, bgColor *color.RGBA, font string) *DriverDigit2 {
 
-	fontsStorage := config.DefaultEmbeddedFonts
+	fontsStorage := fonts.DefaultEmbeddedFonts
 
 	if font == "" {
 		font = fonts.BTitrBd
