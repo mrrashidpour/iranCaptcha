@@ -102,7 +102,8 @@ func (d *DriverDigit) DrawCaptcha(content string) (item base64Captcha.Item, err 
 	}
 	itemChar := NewItemChar(d.Width, d.Height, bgc)
 
-	itemChar.drawSlimLine(rand.IntN(3))
+	//itemChar.drawSlimLine(rand.IntN(3))
+	itemChar.drawSlimLine(rand.IntN(2)) // ۰ یا ۱ خط
 
 	//draw noise
 	if d.NoiseCount > 0 {

@@ -222,22 +222,25 @@ func (item *ItemChar) drawText(text string, fonts []*truetype.Font) error {
 
 // drawGlyphColored گلیف (image.Alpha) را با رنگ مشخص روی بوم می‌کشد
 func drawGlyphColored(dst *image.NRGBA, glyph *image.Alpha, x, y int, c color.NRGBA) {
-	b := glyph.Bounds()
-	for gy := 0; gy < b.Dy(); gy++ {
-		for gx := 0; gx < b.Dx(); gx++ {
-			a := glyph.AlphaAt(gx, gy).A
+	gb := glyph.Bounds()
+	db := dst.Rect
+
+	for gy := 0; gy < gb.Dy(); gy++ {
+		for gx := 0; gx < gb.Dx(); gx++ {
+			a := glyph.Pix[gy*glyph.Stride+gx]
 			if a == 0 {
 				continue
 			}
-			// alpha blend
 			px := x + gx
 			py := y + gy
-			if px < 0 || py < 0 || px >= dst.Rect.Dx() || py >= dst.Rect.Dy() {
+			if px < db.Min.X || py < db.Min.Y || px >= db.Max.X || py >= db.Max.Y {
 				continue
 			}
-			dst.SetNRGBA(px, py, color.NRGBA{
-				R: c.R, G: c.G, B: c.B, A: a,
-			})
+			idx := (py-db.Min.Y)*dst.Stride + (px-db.Min.X)*4
+			dst.Pix[idx+0] = c.R
+			dst.Pix[idx+1] = c.G
+			dst.Pix[idx+2] = c.B
+			dst.Pix[idx+3] = a
 		}
 	}
 }
@@ -257,17 +260,18 @@ func (item *ItemChar) WriteTo(w io.Writer) (int64, error) {
 	return int64(n), err
 }
 
-// EncodeB64string encodes an image to base64 string (بهینه‌شده با یک allocation)
+// EncodeB64string با BestSpeed
 func (item *ItemChar) EncodeB64string() string {
 	var buf bytes.Buffer
-	buf.Grow(4096) // تخمین اندازه
+	buf.Grow(8192)
 
 	buf.WriteString("data:")
 	buf.WriteString(MimeTypeImage)
 	buf.WriteString(";base64,")
 
 	enc := base64.NewEncoder(base64.StdEncoding, &buf)
-	if err := png.Encode(enc, item.nrgba); err != nil {
+	pngEnc := &png.Encoder{CompressionLevel: png.BestSpeed}
+	if err := pngEnc.Encode(enc, item.nrgba); err != nil {
 		panic(err.Error())
 	}
 	if err := enc.Close(); err != nil {
