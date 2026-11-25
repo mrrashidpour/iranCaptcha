@@ -198,33 +198,48 @@ func (item *ItemChar) drawNoise(noiseText string, fonts []*truetype.Font) error 
 // drawText draw captcha string to image.
 func (item *ItemChar) drawText(text string, fonts []*truetype.Font) error {
 	if len(text) == 0 {
-		return errors.New("text must not be empty, there is nothing to draw")
+		return errors.New("text must not be empty")
 	}
 
-	c := freetype.NewContext()
-	c.SetDPI(imageStringDpi)
-	c.SetClip(item.nrgba.Bounds())
-	c.SetDst(item.nrgba)
-	c.SetHinting(font.HintingFull)
-
-	// فونت را یک‌بار بیرون حلقه تنظیم کن (چون فقط یک فونت داریم)
-	c.SetFont(fonts[0])
-
+	f := fonts[0]
 	fontWidth := item.width / len(text)
-	colorText := image.NewUniform(RandDarkColor())
+	colorRGBA := RandDarkColor()
+	colorNRGBA := color.NRGBA{R: colorRGBA.R, G: colorRGBA.G, B: colorRGBA.B, A: 255}
 
 	for i, s := range text {
 		fontSize := item.height * (rand.IntN(5) + 9) / 16
-		c.SetSrc(colorText)
-		c.SetFontSize(float64(fontSize))
 		x := fontWidth*i + fontWidth/fontSize
 		y := item.height/2 + fontSize/2 - rand.IntN(item.height/16*3)
-		pt := freetype.Pt(x, y)
-		if _, err := c.DrawString(string(s), pt); err != nil {
-			return err
-		}
+
+		// ← گلیف از کش
+		glyph := globalGlyphCache.getGlyph(f, s, fontSize)
+
+		// ← رسم گلیف روی بوم با رنگ تصادفی
+		drawGlyphColored(item.nrgba, glyph, x, y, colorNRGBA)
 	}
 	return nil
+}
+
+// drawGlyphColored گلیف (image.Alpha) را با رنگ مشخص روی بوم می‌کشد
+func drawGlyphColored(dst *image.NRGBA, glyph *image.Alpha, x, y int, c color.NRGBA) {
+	b := glyph.Bounds()
+	for gy := 0; gy < b.Dy(); gy++ {
+		for gx := 0; gx < b.Dx(); gx++ {
+			a := glyph.AlphaAt(gx, gy).A
+			if a == 0 {
+				continue
+			}
+			// alpha blend
+			px := x + gx
+			py := y + gy
+			if px < 0 || py < 0 || px >= dst.Rect.Dx() || py >= dst.Rect.Dy() {
+				continue
+			}
+			dst.SetNRGBA(px, py, color.NRGBA{
+				R: c.R, G: c.G, B: c.B, A: a,
+			})
+		}
+	}
 }
 
 // BinaryEncoding encodes an image to PNG and returns a byte slice.
