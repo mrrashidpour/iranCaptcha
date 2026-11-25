@@ -193,36 +193,45 @@ func (item *ItemChar) drawNoise(noiseText string, fonts []*truetype.Font) error 
 	return nil
 }
 
-// drawText draw captcha string to image.
+// drawText draw captcha string to image (نسخه‌ی v1.1.1 — تضمینی کار می‌کند).
 func (item *ItemChar) drawText(text string, fonts []*truetype.Font) error {
 	if len(text) == 0 {
-		return errors.New("text must not be empty")
+		return errors.New("text must not be empty, there is nothing to draw")
 	}
 
-	f := fonts[0]
+	c := freetype.NewContext()
+	c.SetDPI(imageStringDpi)
+	c.SetClip(item.nrgba.Bounds())
+	c.SetDst(item.nrgba)
+	c.SetHinting(font.HintingFull)
+	c.SetFont(fonts[0])
+
 	fontWidth := item.width / len(text)
-	colorRGBA := RandDarkColor()
-	colorNRGBA := color.NRGBA{R: colorRGBA.R, G: colorRGBA.G, B: colorRGBA.B, A: 255}
+	colorText := image.NewUniform(RandDarkColor())
 
 	for i, s := range text {
 		fontSize := item.height * (rand.IntN(5) + 9) / 16
+		c.SetSrc(colorText)
+		c.SetFontSize(float64(fontSize))
 		x := fontWidth*i + fontWidth/fontSize
 		y := item.height/2 + fontSize/2 - rand.IntN(item.height/16*3)
-
-		glyph := globalGlyphCache.getGlyph(f, s, fontSize)
-		drawGlyphColored(item.nrgba, glyph, x, y, colorNRGBA)
+		pt := freetype.Pt(x, y)
+		if _, err := c.DrawString(string(s), pt); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-// drawGlyphColored گلیف (image.Alpha) را با رنگ مشخص روی بوم می‌کشد
+// drawGlyphColored گلیف (image.Alpha) را با رنگ مشخص روی بوم می‌کشد.
 func drawGlyphColored(dst *image.NRGBA, glyph *image.Alpha, x, y int, c color.NRGBA) {
 	gb := glyph.Bounds()
 	db := dst.Rect
 
 	for gy := 0; gy < gb.Dy(); gy++ {
+		rowOffset := gy * glyph.Stride
 		for gx := 0; gx < gb.Dx(); gx++ {
-			a := glyph.Pix[gy*glyph.Stride+gx]
+			a := glyph.Pix[rowOffset+gx]
 			if a == 0 {
 				continue
 			}
@@ -232,10 +241,11 @@ func drawGlyphColored(dst *image.NRGBA, glyph *image.Alpha, x, y int, c color.NR
 				continue
 			}
 			idx := (py-db.Min.Y)*dst.Stride + (px-db.Min.X)*4
-			dst.Pix[idx+0] = c.R
-			dst.Pix[idx+1] = c.G
-			dst.Pix[idx+2] = c.B
-			dst.Pix[idx+3] = a
+			af := uint16(a)
+			inv := 255 - af
+			dst.Pix[idx+0] = uint8((uint16(c.R)*af + uint16(dst.Pix[idx+0])*inv) / 255)
+			dst.Pix[idx+1] = uint8((uint16(c.G)*af + uint16(dst.Pix[idx+1])*inv) / 255)
+			dst.Pix[idx+2] = uint8((uint16(c.B)*af + uint16(dst.Pix[idx+2])*inv) / 255)
 		}
 	}
 }

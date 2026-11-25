@@ -11,7 +11,6 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-// glyphCache کش گلیف‌های rasterize شده (بدون قفل بعد از pre-warm)
 type glyphCache struct {
 	fonts map[*truetype.Font]map[rune]map[int]*image.Alpha
 	ready atomic.Bool
@@ -21,7 +20,6 @@ var globalGlyphCache = &glyphCache{
 	fonts: make(map[*truetype.Font]map[rune]map[int]*image.Alpha),
 }
 
-// putGlyph گلیف را می‌سازد و در کش می‌گذارد (فقط در pre-warm)
 func (gc *glyphCache) putGlyph(f *truetype.Font, r rune, size int) {
 	if gc.fonts[f] == nil {
 		gc.fonts[f] = make(map[rune]map[int]*image.Alpha)
@@ -32,12 +30,10 @@ func (gc *glyphCache) putGlyph(f *truetype.Font, r rune, size int) {
 	gc.fonts[f][r][size] = rasterizeGlyph(f, r, size)
 }
 
-// getGlyph گلیف rasterize شده را برمی‌گرداند (بدون قفل — بعد از pre-warm)
 func (gc *glyphCache) getGlyph(f *truetype.Font, r rune, size int) *image.Alpha {
 	if !gc.ready.Load() {
-		panic("glyph cache not ready (pre-warm not called)")
+		panic("glyph cache not ready")
 	}
-
 	if byRune, ok := gc.fonts[f]; ok {
 		if bySize, ok := byRune[r]; ok {
 			if glyph, ok := bySize[size]; ok {
@@ -45,30 +41,31 @@ func (gc *glyphCache) getGlyph(f *truetype.Font, r rune, size int) *image.Alpha 
 			}
 		}
 	}
-
-	// اگر به اینجا رسید، pre-warm ناقص بوده
-	log.Printf("⚠️ glyph not pre-warmed: rune=%c size=%d — falling back to empty", r, size)
+	log.Printf("⚠️ glyph not pre-warmed: rune=%c size=%d", r, size)
 	return image.NewAlpha(image.Rect(0, 0, 1, 1))
 }
 
-// markReady بعد از اتمام pre-warm صدا زده می‌شود
 func (gc *glyphCache) markReady() {
 	gc.ready.Store(true)
 }
 
-// rasterizeGlyph یک گلیف را به image.Alpha تبدیل می‌کند
 func rasterizeGlyph(f *truetype.Font, r rune, size int) *image.Alpha {
-	bounds := f.Bounds(fixed.I(size))
+	// متریک‌های فونت
+	fu := fixed.I(size)
+	bounds := f.Bounds(fu)
+
+	// ابعاد کادر
 	width := bounds.Max.X.Ceil() - bounds.Min.X.Floor()
 	height := bounds.Max.Y.Ceil() - bounds.Min.Y.Floor()
 	if width <= 0 || height <= 0 {
 		return image.NewAlpha(image.Rect(0, 0, 1, 1))
 	}
 
-	width += 2
-	height += 2
+	const pad = 3
+	w := width + pad*2
+	h := height + pad*2
 
-	dst := image.NewAlpha(image.Rect(0, 0, width, height))
+	dst := image.NewAlpha(image.Rect(0, 0, w, h))
 
 	c := freetype.NewContext()
 	c.SetDPI(imageStringDpi)
@@ -79,8 +76,25 @@ func rasterizeGlyph(f *truetype.Font, r rune, size int) *image.Alpha {
 	c.SetSrc(image.Opaque)
 	c.SetHinting(font.HintingFull)
 
-	pt := freetype.Pt(1, height-1)
-	c.DrawString(string(r), pt)
+	// x: کادر از Min.X شروع می‌شود، پس با pad - Min.X شروع می‌کنیم
+	x := pad - bounds.Min.X.Floor()
 
+	// y: freetype از baseline به بالا رسم می‌کند و y از پایین‌بوم است.
+	// کادر از baseline.Min.Y (معمولاً منفی) تا baseline.Max.Y (معمولاً مثبت) است.
+	// پس baseline را در h - pad - bounds.Max.Y.Ceil() قرار می‌دهیم تا بالای کادر در pad بیفتد.
+	y := h - pad - bounds.Max.Y.Ceil()
+
+	pt := freetype.Pt(x, y)
+	if _, err := c.DrawString(string(r), pt); err != nil {
+		log.Printf("⚠️ DrawString error rune=%c size=%d: %v", r, size, err)
+	}
+
+	// بررسی خالی نبودن
+	for _, v := range dst.Pix {
+		if v != 0 {
+			return dst
+		}
+	}
+	log.Printf("⚠️ rasterizeGlyph empty rune=%c size=%d bounds=%v pt=%v", r, size, dst.Bounds(), pt)
 	return dst
 }
