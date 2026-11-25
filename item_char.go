@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
@@ -12,7 +11,7 @@ import (
 	"io"
 	"log"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
@@ -37,25 +36,22 @@ type ItemChar struct {
 func NewItemChar(w int, h int, bgColor color.RGBA) *ItemChar {
 	d := ItemChar{width: w, height: h}
 	m := image.NewNRGBA(image.Rect(0, 0, w, h))
-	draw.Draw(m, m.Bounds(), &image.Uniform{bgColor}, image.ZP, draw.Src)
+	draw.Draw(m, m.Bounds(), &image.Uniform{C: bgColor}, image.Point{}, draw.Src)
 	d.nrgba = m
 	return &d
 }
 
 // drawHollowLine draw strong and bold white line.
 func (item *ItemChar) drawHollowLine() *ItemChar {
-
 	first := item.width / 20
 	end := first * 19
 
 	lineColor := RandLightColor()
 
-	x1 := float64(rand.Intn(first))
-	//y1 := float64(rand.Intn(y)+y);
+	x1 := float64(rand.IntN(first))
+	x2 := float64(rand.IntN(first) + end)
 
-	x2 := float64(rand.Intn(first) + end)
-
-	multiple := float64(rand.Intn(5)+3) / float64(5)
+	multiple := float64(rand.IntN(5)+3) / float64(5)
 	if int(multiple*10)%3 == 0 {
 		multiple = multiple * -1.0
 	}
@@ -63,14 +59,11 @@ func (item *ItemChar) drawHollowLine() *ItemChar {
 	w := item.height / 20
 
 	for ; x1 < x2; x1++ {
-
 		y := math.Sin(x1*math.Pi*multiple/float64(item.width)) * float64(item.height/3)
-
 		if multiple < 0 {
 			y = y + float64(item.height/2)
 		}
 		item.nrgba.Set(int(x1), int(y), lineColor)
-
 		for i := 0; i <= w; i++ {
 			item.nrgba.Set(int(x1), int(y)+i, lineColor)
 		}
@@ -83,10 +76,8 @@ func (item *ItemChar) drawHollowLine() *ItemChar {
 func (item *ItemChar) drawSineLine() *ItemChar {
 	var py float64
 
-	a := rand.Intn(item.height / 2)
-
+	a := rand.IntN(item.height / 2)
 	b := random(int64(-item.height/4), int64(item.height/4))
-
 	f := random(int64(-item.height/4), int64(item.height/4))
 
 	var t float64
@@ -103,13 +94,14 @@ func (item *ItemChar) drawSineLine() *ItemChar {
 	px2 := int(random(int64(float64(item.width)*0.8), int64(item.width)))
 
 	c := RandDeepColor()
+	cNRGBA := color.NRGBA{R: c.R, G: c.G, B: c.B, A: c.A}
 
 	for px := px1; px < px2; px++ {
 		if w != 0 {
 			py = float64(a)*math.Sin(w*float64(px)+f) + b + (float64(item.width) / float64(5))
 			i := item.height / 5
 			for i > 0 {
-				item.nrgba.Set(px+i, int(py), c)
+				item.nrgba.SetNRGBA(px+i, int(py), cNRGBA)
 				i--
 			}
 		}
@@ -120,34 +112,29 @@ func (item *ItemChar) drawSineLine() *ItemChar {
 
 // drawSlimLine draw n slim-random-color lines.
 func (item *ItemChar) drawSlimLine(num int) *ItemChar {
-
 	first := item.width / 10
 	end := first * 9
-
 	y := item.height / 3
 
 	for i := 0; i < num; i++ {
-
-		point1 := point{X: rand.Intn(first), Y: rand.Intn(y)}
-		point2 := point{X: rand.Intn(first) + end, Y: rand.Intn(y)}
+		point1 := point{X: rand.IntN(first), Y: rand.IntN(y)}
+		point2 := point{X: rand.IntN(first) + end, Y: rand.IntN(y)}
 
 		if i%2 == 0 {
-			point1.Y = rand.Intn(y) + y*2
-			point2.Y = rand.Intn(y)
+			point1.Y = rand.IntN(y) + y*2
+			point2.Y = rand.IntN(y)
 		} else {
-			point1.Y = rand.Intn(y) + y*(i%2)
-			point2.Y = rand.Intn(y) + y*2
+			point1.Y = rand.IntN(y) + y*(i%2)
+			point2.Y = rand.IntN(y) + y*2
 		}
 
 		item.drawBeeline(point1, point2, RandDeepColor())
-
 	}
 	return item
 }
 
 func (item *ItemChar) drawBeeline(point1 point, point2 point, lineColor color.RGBA) {
 	dx := math.Abs(float64(point1.X - point2.X))
-
 	dy := math.Abs(float64(point2.Y - point1.Y))
 	sx, sy := 1, 1
 	if point1.X >= point2.X {
@@ -157,12 +144,16 @@ func (item *ItemChar) drawBeeline(point1 point, point2 point, lineColor color.RG
 		sy = -1
 	}
 	err := dx - dy
+
+	// تبدیل یک‌بار به NRGBA برای SetNRGBA سریع‌تر
+	c := color.NRGBA{R: lineColor.R, G: lineColor.G, B: lineColor.B, A: lineColor.A}
+
 	for {
-		item.nrgba.Set(point1.X, point1.Y, lineColor)
-		item.nrgba.Set(point1.X+1, point1.Y, lineColor)
-		item.nrgba.Set(point1.X-1, point1.Y, lineColor)
-		item.nrgba.Set(point1.X+2, point1.Y, lineColor)
-		item.nrgba.Set(point1.X-2, point1.Y, lineColor)
+		item.nrgba.SetNRGBA(point1.X, point1.Y, c)
+		item.nrgba.SetNRGBA(point1.X+1, point1.Y, c)
+		item.nrgba.SetNRGBA(point1.X-1, point1.Y, c)
+		item.nrgba.SetNRGBA(point1.X+2, point1.Y, c)
+		item.nrgba.SetNRGBA(point1.X-2, point1.Y, c)
 		if point1.X == point2.X && point1.Y == point2.Y {
 			return
 		}
@@ -179,22 +170,23 @@ func (item *ItemChar) drawBeeline(point1 point, point2 point, lineColor color.RG
 }
 
 func (item *ItemChar) drawNoise(noiseText string, fonts []*truetype.Font) error {
-
 	c := freetype.NewContext()
 	c.SetDPI(imageStringDpi)
-
 	c.SetClip(item.nrgba.Bounds())
 	c.SetDst(item.nrgba)
 	c.SetHinting(font.HintingFull)
-	rawFontSize := float64(item.height) / (1 + float64(rand.Intn(7))/float64(10))
+
+	// فونت را یک‌بار بیرون حلقه تنظیم کن (اگر چند فونت داری، اینجا را تغییر بده)
+	c.SetFont(fonts[0])
+
+	rawFontSize := float64(item.height) / (1 + float64(rand.IntN(7))/float64(10))
 
 	for _, char := range noiseText {
-		rw := rand.Intn(item.width)
-		rh := rand.Intn(item.height)
-		fontSize := rawFontSize/2 + float64(rand.Intn(5))
+		rw := rand.IntN(item.width)
+		rh := rand.IntN(item.height)
+		fontSize := rawFontSize/2 + float64(rand.IntN(5))
 		c.SetSrc(image.NewUniform(RandColor()))
 		c.SetFontSize(fontSize)
-		c.SetFont(randFontFrom(fonts))
 		pt := freetype.Pt(rw, rh)
 		if _, err := c.DrawString(string(char), pt); err != nil {
 			log.Println(err)
@@ -203,30 +195,30 @@ func (item *ItemChar) drawNoise(noiseText string, fonts []*truetype.Font) error 
 	return nil
 }
 
-//drawText draw captcha string to image.把文字写入图像验证码
-
+// drawText draw captcha string to image.
 func (item *ItemChar) drawText(text string, fonts []*truetype.Font) error {
+	if len(text) == 0 {
+		return errors.New("text must not be empty, there is nothing to draw")
+	}
+
 	c := freetype.NewContext()
 	c.SetDPI(imageStringDpi)
 	c.SetClip(item.nrgba.Bounds())
 	c.SetDst(item.nrgba)
 	c.SetHinting(font.HintingFull)
 
-	if len(text) == 0 {
-		return errors.New("text must not be empty, there is nothing to draw")
-	}
+	// فونت را یک‌بار بیرون حلقه تنظیم کن (چون فقط یک فونت داریم)
+	c.SetFont(fonts[0])
 
 	fontWidth := item.width / len(text)
-
 	colorText := image.NewUniform(RandDarkColor())
 
 	for i, s := range text {
-		fontSize := item.height * (rand.Intn(5) + 9) / 16
+		fontSize := item.height * (rand.IntN(5) + 9) / 16
 		c.SetSrc(colorText)
 		c.SetFontSize(float64(fontSize))
-		c.SetFont(randFontFrom(fonts))
 		x := fontWidth*i + fontWidth/fontSize
-		y := item.height/2 + fontSize/2 - rand.Intn(item.height/16*3)
+		y := item.height/2 + fontSize/2 - rand.IntN(item.height/16*3)
 		pt := freetype.Pt(x, y)
 		if _, err := c.DrawString(string(s), pt); err != nil {
 			return err
@@ -244,16 +236,30 @@ func (item *ItemChar) BinaryEncoding() []byte {
 	return buf.Bytes()
 }
 
-// WriteTo writes captcha character in png format into the given io.Writer, and
-// returns the number of bytes written and an error if any.
+// WriteTo writes captcha character in png format into the given io.Writer.
 func (item *ItemChar) WriteTo(w io.Writer) (int64, error) {
 	n, err := w.Write(item.BinaryEncoding())
 	return int64(n), err
 }
 
-// EncodeB64string encodes an image to base64 string
+// EncodeB64string encodes an image to base64 string (بهینه‌شده با یک allocation)
 func (item *ItemChar) EncodeB64string() string {
-	return fmt.Sprintf("data:%s;base64,%s", MimeTypeImage, base64.StdEncoding.EncodeToString(item.BinaryEncoding()))
+	var buf bytes.Buffer
+	buf.Grow(4096) // تخمین اندازه
+
+	buf.WriteString("data:")
+	buf.WriteString(MimeTypeImage)
+	buf.WriteString(";base64,")
+
+	enc := base64.NewEncoder(base64.StdEncoding, &buf)
+	if err := png.Encode(enc, item.nrgba); err != nil {
+		panic(err.Error())
+	}
+	if err := enc.Close(); err != nil {
+		panic(err.Error())
+	}
+
+	return buf.String()
 }
 
 type point struct {
@@ -261,10 +267,9 @@ type point struct {
 	Y int
 }
 
-// randFontFrom choose random font family.选择随机的字体
+// randFontFrom choose random font family.
 func randFontFrom(fonts []*truetype.Font) *truetype.Font {
 	fontCount := len(fonts)
-
-	index := rand.Intn(fontCount)
+	index := rand.IntN(fontCount)
 	return fonts[index]
 }

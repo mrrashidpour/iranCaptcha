@@ -2,7 +2,7 @@ package iranCaptcha
 
 import (
 	"image/color"
-	"math/rand"
+	"math/rand/v2"
 	"strings"
 
 	"github.com/golang/freetype/truetype"
@@ -102,7 +102,7 @@ func (d *DriverDigit) DrawCaptcha(content string) (item base64Captcha.Item, err 
 	}
 	itemChar := NewItemChar(d.Width, d.Height, bgc)
 
-	itemChar.drawSlimLine(rand.Intn(3))
+	itemChar.drawSlimLine(rand.IntN(3))
 
 	//draw noise
 	if d.NoiseCount > 0 {

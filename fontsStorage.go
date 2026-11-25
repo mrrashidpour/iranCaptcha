@@ -2,39 +2,44 @@ package iranCaptcha
 
 import (
 	"embed"
+	"sync"
 
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
 )
 
 type EmbeddedFontsStorage struct {
-	fs embed.FS
+	fs    embed.FS
+	cache sync.Map
 }
 
+// LoadFontByName فونت را از embed.FS می‌خواند و در حافظه کش می‌کند
 func (s *EmbeddedFontsStorage) LoadFontByName(name string) *truetype.Font {
+	if v, ok := s.cache.Load(name); ok {
+		return v.(*truetype.Font)
+	}
+
 	fontBytes, err := s.fs.ReadFile(name)
 	if err != nil {
 		panic(err)
 	}
 
-	//font file bytes to trueTypeFont
 	trueTypeFont, err := freetype.ParseFont(fontBytes)
 	if err != nil {
 		panic(err)
 	}
 
+	s.cache.Store(name, trueTypeFont)
 	return trueTypeFont
 }
 
-// LoadFontsByNames import fonts from dir.
-// make the simple-font(RitaSmith.ttf) the first font of trueTypeFonts.
+// LoadFontsByNames چند فونت را بارگذاری می‌کند
 func (s *EmbeddedFontsStorage) LoadFontsByNames(assetFontNames []string) []*truetype.Font {
-	fonts := make([]*truetype.Font, 0)
-	for _, assetName := range assetFontNames {
-		f := s.LoadFontByName(assetName)
-		fonts = append(fonts, f)
+	result := make([]*truetype.Font, 0, len(assetFontNames))
+	for _, name := range assetFontNames {
+		result = append(result, s.LoadFontByName(name))
 	}
-	return fonts
+	return result
 }
 
 func NewEmbeddedFontsStorage(fs embed.FS) *EmbeddedFontsStorage {
