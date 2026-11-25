@@ -260,7 +260,7 @@ func (item *ItemChar) WriteTo(w io.Writer) (int64, error) {
 	return int64(n), err
 }
 
-// EncodeB64string با BestSpeed
+// EncodeB64string با DefaultCompression (برگشت به نسخه قبل)
 func (item *ItemChar) EncodeB64string() string {
 	var buf bytes.Buffer
 	buf.Grow(8192)
@@ -270,8 +270,7 @@ func (item *ItemChar) EncodeB64string() string {
 	buf.WriteString(";base64,")
 
 	enc := base64.NewEncoder(base64.StdEncoding, &buf)
-	pngEnc := &png.Encoder{CompressionLevel: png.BestSpeed}
-	if err := pngEnc.Encode(enc, item.nrgba); err != nil {
+	if err := png.Encode(enc, item.nrgba); err != nil { // ← png.Encode معمولی
 		panic(err.Error())
 	}
 	if err := enc.Close(); err != nil {
