@@ -40,24 +40,19 @@ func RandText(size int, sourceChars string) string {
 	return string(text)
 }
 
-// random get random number between min and max.
 func random(min int64, max int64) float64 {
 	return float64(min) + rand.Float64()*float64(max-min)
 }
 
-// RandDeepColor get random deep color.
 func RandDeepColor() color.RGBA {
 	randColor := RandColor()
-
 	increase := float64(30 + rand.IntN(255))
 	red := math.Abs(math.Min(float64(randColor.R)-increase, 255))
 	green := math.Abs(math.Min(float64(randColor.G)-increase, 255))
 	blue := math.Abs(math.Min(float64(randColor.B)-increase, 255))
-
 	return color.RGBA{R: uint8(red), G: uint8(green), B: uint8(blue), A: uint8(255)}
 }
 
-// RandLightColor get random light color.
 func RandLightColor() color.RGBA {
 	red := rand.IntN(55) + 200
 	green := rand.IntN(55) + 200
@@ -65,7 +60,6 @@ func RandLightColor() color.RGBA {
 	return color.RGBA{R: uint8(red), G: uint8(green), B: uint8(blue), A: uint8(255)}
 }
 
-// RandDarkColor get random dark color.
 func RandDarkColor() color.RGBA {
 	maxColor := 130
 	red := rand.IntN(maxColor)
@@ -74,7 +68,6 @@ func RandDarkColor() color.RGBA {
 	return color.RGBA{R: uint8(red), G: uint8(green), B: uint8(blue), A: uint8(255)}
 }
 
-// RandColor get random color.
 func RandColor() color.RGBA {
 	red := rand.IntN(255)
 	green := rand.IntN(255)
@@ -91,7 +84,6 @@ func RandColor() color.RGBA {
 }
 
 func randIntRange(from, to int) int {
-	// rand.IntN panics if n <= 0.
 	if to-from <= 0 {
 		return from
 	}
@@ -103,7 +95,6 @@ func randFloat64Range(from, to float64) float64 {
 }
 
 // RandomId یک ID سریع و یکتا برمی‌گرداند (counter + timestamp).
-// فقط برای یکتایی، نه رمزنگاری‌امن.
 func RandomId() string {
 	n := idCounter.Add(1)
 	return strconv.FormatUint(uint64(time.Now().UnixNano())<<16|n, 36)

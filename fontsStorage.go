@@ -13,7 +13,6 @@ type EmbeddedFontsStorage struct {
 	cache sync.Map
 }
 
-// LoadFontByName فونت را از embed.FS می‌خواند و در حافظه کش می‌کند
 func (s *EmbeddedFontsStorage) LoadFontByName(name string) *truetype.Font {
 	if v, ok := s.cache.Load(name); ok {
 		return v.(*truetype.Font)
@@ -23,7 +22,6 @@ func (s *EmbeddedFontsStorage) LoadFontByName(name string) *truetype.Font {
 	if err != nil {
 		panic(err)
 	}
-
 	trueTypeFont, err := freetype.ParseFont(fontBytes)
 	if err != nil {
 		panic(err)
@@ -33,7 +31,6 @@ func (s *EmbeddedFontsStorage) LoadFontByName(name string) *truetype.Font {
 	return trueTypeFont
 }
 
-// LoadFontsByNames چند فونت را بارگذاری می‌کند
 func (s *EmbeddedFontsStorage) LoadFontsByNames(assetFontNames []string) []*truetype.Font {
 	result := make([]*truetype.Font, 0, len(assetFontNames))
 	for _, name := range assetFontNames {
@@ -43,7 +40,5 @@ func (s *EmbeddedFontsStorage) LoadFontsByNames(assetFontNames []string) []*true
 }
 
 func NewEmbeddedFontsStorage(fs embed.FS) *EmbeddedFontsStorage {
-	return &EmbeddedFontsStorage{
-		fs: fs,
-	}
+	return &EmbeddedFontsStorage{fs: fs}
 }

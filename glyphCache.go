@@ -2,7 +2,8 @@ package iranCaptcha
 
 import (
 	"image"
-	"sync"
+	"log"
+	"sync/atomic"
 
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
@@ -10,48 +11,53 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-// glyphCache کش گلیف‌های rasterize شده
+// glyphCache کش گلیف‌های rasterize شده (بدون قفل بعد از pre-warm)
 type glyphCache struct {
-	mu    sync.RWMutex
-	fonts map[*truetype.Font]map[rune]map[int]*image.Alpha // font -> rune -> size -> glyph
+	fonts map[*truetype.Font]map[rune]map[int]*image.Alpha
+	ready atomic.Bool
 }
 
 var globalGlyphCache = &glyphCache{
 	fonts: make(map[*truetype.Font]map[rune]map[int]*image.Alpha),
 }
 
-// getGlyph گلیف rasterize شده را برمی‌گرداند (یا می‌سازد و کش می‌کند)
-func (gc *glyphCache) getGlyph(f *truetype.Font, r rune, size int) *image.Alpha {
-	gc.mu.RLock()
-	if byRune, ok := gc.fonts[f]; ok {
-		if bySize, ok := byRune[r]; ok {
-			if glyph, ok := bySize[size]; ok {
-				gc.mu.RUnlock()
-				return glyph
-			}
-		}
-	}
-	gc.mu.RUnlock()
-
-	// ساخت گلیف جدید
-	glyph := rasterizeGlyph(f, r, size)
-
-	gc.mu.Lock()
+// putGlyph گلیف را می‌سازد و در کش می‌گذارد (فقط در pre-warm)
+func (gc *glyphCache) putGlyph(f *truetype.Font, r rune, size int) {
 	if gc.fonts[f] == nil {
 		gc.fonts[f] = make(map[rune]map[int]*image.Alpha)
 	}
 	if gc.fonts[f][r] == nil {
 		gc.fonts[f][r] = make(map[int]*image.Alpha)
 	}
-	gc.fonts[f][r][size] = glyph
-	gc.mu.Unlock()
+	gc.fonts[f][r][size] = rasterizeGlyph(f, r, size)
+}
 
-	return glyph
+// getGlyph گلیف rasterize شده را برمی‌گرداند (بدون قفل — بعد از pre-warm)
+func (gc *glyphCache) getGlyph(f *truetype.Font, r rune, size int) *image.Alpha {
+	if !gc.ready.Load() {
+		panic("glyph cache not ready (pre-warm not called)")
+	}
+
+	if byRune, ok := gc.fonts[f]; ok {
+		if bySize, ok := byRune[r]; ok {
+			if glyph, ok := bySize[size]; ok {
+				return glyph
+			}
+		}
+	}
+
+	// اگر به اینجا رسید، pre-warm ناقص بوده
+	log.Printf("⚠️ glyph not pre-warmed: rune=%c size=%d — falling back to empty", r, size)
+	return image.NewAlpha(image.Rect(0, 0, 1, 1))
+}
+
+// markReady بعد از اتمام pre-warm صدا زده می‌شود
+func (gc *glyphCache) markReady() {
+	gc.ready.Store(true)
 }
 
 // rasterizeGlyph یک گلیف را به image.Alpha تبدیل می‌کند
 func rasterizeGlyph(f *truetype.Font, r rune, size int) *image.Alpha {
-	// اندازه‌ی گلیف
 	bounds := f.Bounds(fixed.I(size))
 	width := bounds.Max.X.Ceil() - bounds.Min.X.Floor()
 	height := bounds.Max.Y.Ceil() - bounds.Min.Y.Floor()
@@ -59,7 +65,6 @@ func rasterizeGlyph(f *truetype.Font, r rune, size int) *image.Alpha {
 		return image.NewAlpha(image.Rect(0, 0, 1, 1))
 	}
 
-	// کمی حاشیه
 	width += 2
 	height += 2
 
@@ -74,7 +79,6 @@ func rasterizeGlyph(f *truetype.Font, r rune, size int) *image.Alpha {
 	c.SetSrc(image.Opaque)
 	c.SetHinting(font.HintingFull)
 
-	// رسم در مبدأ
 	pt := freetype.Pt(1, height-1)
 	c.DrawString(string(r), pt)
 

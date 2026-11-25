@@ -66,13 +66,17 @@ func NewDriverDigit(height int, width int, noiseCount int, length int, bgColor *
 		Fonts:        []string{font},
 	}
 
-	// ← Pre-warm گلیف کش: همه‌ی ترکیب‌های ممکن size × رقم را از قبل بساز
-	// این کار از قفل نوشتن (Lock) در زمان اجرا جلوگیری می‌کند
-	for size := 8; size <= 40; size++ {
+	// ← Pre-warm گلیف کش: همه‌ی sizeهای ممکن در drawText و drawNoise
+	// در drawText: fontSize = height * (9..13) / 16
+	// در drawNoise: fontSize = rawFontSize/2 + 0..4 (اعشاری)
+	// برای اطمینان، 1 تا 200 را pre-warm کن (ارزان، یک‌بار در startup)
+	for size := 1; size <= 200; size++ {
 		for _, r := range d.Source {
-			globalGlyphCache.getGlyph(tf, r, size)
+			globalGlyphCache.putGlyph(tf, r, size)
 		}
 	}
+
+	globalGlyphCache.markReady()
 
 	return d
 }
@@ -112,7 +116,6 @@ func (d *DriverDigit) DrawCaptcha(content string) (item base64Captcha.Item, err 
 	}
 	itemChar := NewItemChar(d.Width, d.Height, bgc)
 
-	//itemChar.drawSlimLine(rand.IntN(3))
 	itemChar.drawSlimLine(rand.IntN(2)) // ۰ یا ۱ خط
 
 	//draw noise

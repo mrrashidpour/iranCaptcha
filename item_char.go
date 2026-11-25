@@ -146,7 +146,6 @@ func (item *ItemChar) drawBeeline(point1 point, point2 point, lineColor color.RG
 	}
 	err := dx - dy
 
-	// تبدیل یک‌بار به NRGBA برای SetNRGBA سریع‌تر
 	c := color.NRGBA{R: lineColor.R, G: lineColor.G, B: lineColor.B, A: lineColor.A}
 
 	for {
@@ -176,8 +175,6 @@ func (item *ItemChar) drawNoise(noiseText string, fonts []*truetype.Font) error 
 	c.SetClip(item.nrgba.Bounds())
 	c.SetDst(item.nrgba)
 	c.SetHinting(font.HintingFull)
-
-	// فونت را یک‌بار بیرون حلقه تنظیم کن (اگر چند فونت داری، اینجا را تغییر بده)
 	c.SetFont(fonts[0])
 
 	rawFontSize := float64(item.height) / (1 + float64(rand.IntN(7))/float64(10))
@@ -212,10 +209,7 @@ func (item *ItemChar) drawText(text string, fonts []*truetype.Font) error {
 		x := fontWidth*i + fontWidth/fontSize
 		y := item.height/2 + fontSize/2 - rand.IntN(item.height/16*3)
 
-		// ← گلیف از کش
 		glyph := globalGlyphCache.getGlyph(f, s, fontSize)
-
-		// ← رسم گلیف روی بوم با رنگ تصادفی
 		drawGlyphColored(item.nrgba, glyph, x, y, colorNRGBA)
 	}
 	return nil
@@ -261,26 +255,7 @@ func (item *ItemChar) WriteTo(w io.Writer) (int64, error) {
 	return int64(n), err
 }
 
-// EncodeB64string با DefaultCompression (برگشت به نسخه قبل)
-//func (item *ItemChar) EncodeB64string() string {
-//	var buf bytes.Buffer
-//	buf.Grow(8192)
-//
-//	buf.WriteString("data:")
-//	buf.WriteString(MimeTypeImage)
-//	buf.WriteString(";base64,")
-//
-//	enc := base64.NewEncoder(base64.StdEncoding, &buf)
-//	if err := png.Encode(enc, item.nrgba); err != nil {
-//		panic(err.Error())
-//	}
-//	if err := enc.Close(); err != nil {
-//		panic(err.Error())
-//	}
-//
-//	return buf.String()
-//}
-
+// EncodeB64string encodes an image to base64 string
 func (item *ItemChar) EncodeB64string() string {
 	return fmt.Sprintf("data:%s;base64,%s", MimeTypeImage,
 		base64.StdEncoding.EncodeToString(item.BinaryEncoding()))
