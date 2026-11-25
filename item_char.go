@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
@@ -261,23 +262,28 @@ func (item *ItemChar) WriteTo(w io.Writer) (int64, error) {
 }
 
 // EncodeB64string با DefaultCompression (برگشت به نسخه قبل)
+//func (item *ItemChar) EncodeB64string() string {
+//	var buf bytes.Buffer
+//	buf.Grow(8192)
+//
+//	buf.WriteString("data:")
+//	buf.WriteString(MimeTypeImage)
+//	buf.WriteString(";base64,")
+//
+//	enc := base64.NewEncoder(base64.StdEncoding, &buf)
+//	if err := png.Encode(enc, item.nrgba); err != nil {
+//		panic(err.Error())
+//	}
+//	if err := enc.Close(); err != nil {
+//		panic(err.Error())
+//	}
+//
+//	return buf.String()
+//}
+
 func (item *ItemChar) EncodeB64string() string {
-	var buf bytes.Buffer
-	buf.Grow(8192)
-
-	buf.WriteString("data:")
-	buf.WriteString(MimeTypeImage)
-	buf.WriteString(";base64,")
-
-	enc := base64.NewEncoder(base64.StdEncoding, &buf)
-	if err := png.Encode(enc, item.nrgba); err != nil { // ← png.Encode معمولی
-		panic(err.Error())
-	}
-	if err := enc.Close(); err != nil {
-		panic(err.Error())
-	}
-
-	return buf.String()
+	return fmt.Sprintf("data:%s;base64,%s", MimeTypeImage,
+		base64.StdEncoding.EncodeToString(item.BinaryEncoding()))
 }
 
 type point struct {

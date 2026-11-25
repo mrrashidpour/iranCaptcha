@@ -54,7 +54,7 @@ func NewDriverDigit(height int, width int, noiseCount int, length int, bgColor *
 
 	tfs := []*truetype.Font{tf}
 
-	return &DriverDigit{
+	d := &DriverDigit{
 		Height:       height,
 		Width:        width,
 		NoiseCount:   noiseCount,
@@ -65,6 +65,16 @@ func NewDriverDigit(height int, width int, noiseCount int, length int, bgColor *
 		fontsArray:   tfs,
 		Fonts:        []string{font},
 	}
+
+	// ← Pre-warm گلیف کش: همه‌ی ترکیب‌های ممکن size × رقم را از قبل بساز
+	// این کار از قفل نوشتن (Lock) در زمان اجرا جلوگیری می‌کند
+	for size := 8; size <= 40; size++ {
+		for _, r := range d.Source {
+			globalGlyphCache.getGlyph(tf, r, size)
+		}
+	}
+
+	return d
 }
 
 // ConvertFonts loads fonts by names
